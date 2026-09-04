@@ -61,8 +61,6 @@ navegar/cobrar com uma integração pela metade.
    - `PINPAY_TOKEN` — sua **Secret Key** (`sk_live_...`) da PinPay.
    - `PINPAY_WEBHOOK_SECRET` — o **Signing Secret** (`whsec_...`) do webhook
      que você vai cadastrar no passo 6.
-   - `FRONTEND_ORIGIN` — origem(ns) do site, separadas por vírgula. Ex.:
-     `https://popozuda-kit.vercel.app,https://www.popozudakit.com.br`
    - `PUBLIC_URL` — a URL pública que o Railway vai gerar pra este serviço
      (você pode implantar uma vez, copiar a URL gerada em Settings →
      Networking, e então voltar aqui e preencher).
@@ -82,14 +80,18 @@ navegar/cobrar com uma integração pela metade.
 | `DATABASE_URL` | sim | Injetada pelo plugin Postgres do Railway |
 | `PINPAY_TOKEN` | sim (pra cobrar de verdade) | Secret Key da PinPay (`sk_live_...`) |
 | `PINPAY_WEBHOOK_SECRET` | sim (pra confirmar pagamento) | Signing Secret do webhook (`whsec_...`) |
-| `FRONTEND_ORIGIN` | sim | Origens autorizadas por CORS, separadas por vírgula |
 | `PUBLIC_URL` | recomendada | URL pública deste serviço, usada para montar `webhook_url` |
 | `PORT` | não | Railway define sozinho |
 
 ## Segurança
 
-- CORS restrito às origens em `FRONTEND_ORIGIN` (sem `*`) — qualquer outra
-  origem recebe `403 forbidden_origin`.
+- **CORS está aberto de propósito** (sem allowlist de origem) — decisão
+  explícita pra simplificar o deploy. Isso deixa `POST /api/pix` chamável
+  por qualquer site, o que na pior hipótese gera pedidos "fantasma" no
+  banco (nenhum dinheiro se move por causa disso: quem paga de verdade é o
+  cliente, autenticado no app do próprio banco dele). Se um dia quiser
+  reduzir esse abuso, reintroduza uma checagem de `Origin` em
+  `src/server.js`.
 - Preço e nome de cada kit são fixos no servidor; o payload do cliente só
   informa qual kit (`kit1`/`kit3`/`kit5`) e os dados do comprador.
 - Webhook exige assinatura HMAC-SHA256 válida (comparação constant-time);

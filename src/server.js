@@ -10,30 +10,14 @@ import webhookRouter from "./routes/webhook.js";
 const app = express();
 app.disable("x-powered-by");
 
-const allowedOrigins = (process.env.FRONTEND_ORIGIN || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-class CorsOriginError extends Error {}
-
-app.use(
-  cors({
-    origin(origin, callback) {
-      // Sem Origin = chamada servidor-a-servidor (curl, health check) — permite.
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      callback(new CorsOriginError(`Origem não autorizada: ${origin}`));
-    },
-  })
-);
-
-app.use((err, req, res, next) => {
-  if (err instanceof CorsOriginError) {
-    return res.status(403).json({ error: "forbidden_origin" });
-  }
-  next(err);
-});
+// CORS aberto de proposito: sem allowlist de origem, qualquer site pode
+// chamar esta API pelo navegador. Deixa POST /api/pix publico -- na pior
+// hipotese alguem gera cobrancas PIX "fantasma" (lixo no banco/na conta
+// PinPay), mas ninguem move dinheiro por causa disso: quem paga de
+// verdade e o cliente, autenticado no app do proprio banco dele. Pra
+// reduzir esse abuso depois, reintroduza aqui uma checagem de Origin
+// contra uma lista de dominios permitidos.
+app.use(cors());
 
 // Precisa vir ANTES do express.json(): o webhook exige o corpo cru para
 // validar a assinatura HMAC (ver src/routes/webhook.js).
