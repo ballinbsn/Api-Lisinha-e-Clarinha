@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
+import QRCode from "qrcode";
 import { pool } from "../lib/db.js";
 import { createPixCharge } from "../lib/pinpay.js";
 
@@ -100,31 +101,36 @@ router.post("/", async (req, res) => {
     });
   }
 
-  // TEMP DEBUG: os nomes de campo do guia inicial (qr_code/qr_code_url) nao
-  // batem com a resposta real da PinPay -- log temporario para descobrir os
-  // nomes corretos, remover depois de confirmado.
-  console.log("pinpay_charge_response_debug", JSON.stringify(charge));
+  // A resposta real da PinPay traz o PIX dentro de "pix" (não nos campos de
+  // topo do guia inicial), e qr_code_url normalmente vem null — só o código
+  // copia-e-cola. Geramos a imagem do QR aqui mesmo (data URI), para não
+  // depender de nenhum serviço externo pra exibir o código no site.
+  const pix = charge.pix || {};
+  const qrCode = pix.qr_code || charge.qr_code || null;
+  const expiresAt = pix.expires_at || charge.expires_at || null;
+  let qrCodeUrl = pix.qr_code_url || charge.qr_code_url || null;
+
+  if (!qrCodeUrl && qrCode) {
+    try {
+      qrCodeUrl = await QRCode.toDataURL(qrCode, { margin: 1, width: 320 });
+    } catch (err) {
+      console.error("qr_image_generation_failed", { orderId, message: err.message });
+    }
+  }
 
   await pool.query(
     `UPDATE orders
         SET pinpay_transaction_id = $1, status = $2, qr_code = $3, qr_code_url = $4, expires_at = $5, updated_at = now()
       WHERE id = $6`,
-    [
-      charge.id,
-      charge.status || "pending",
-      charge.qr_code,
-      charge.qr_code_url,
-      charge.expires_at,
-      orderId,
-    ]
+    [charge.id, charge.status || "pending", qrCode, qrCodeUrl, expiresAt, orderId]
   );
 
   res.status(201).json({
     order_id: orderId,
     status: charge.status || "pending",
-    qr_code: charge.qr_code,
-    qr_code_url: charge.qr_code_url,
-    expires_at: charge.expires_at,
+    qr_code: qrCode,
+    qr_code_url: qrCodeUrl,
+    expires_at: expiresAt,
     amount: kitInfo.amount,
   });
 });
