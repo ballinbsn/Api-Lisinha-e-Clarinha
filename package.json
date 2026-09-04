@@ -1,0 +1,20 @@
+{
+  "name": "popozuda-pinpay-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API de checkout PIX (PinPay) para o Kit Popozuda Lisinha + Clarinha",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
