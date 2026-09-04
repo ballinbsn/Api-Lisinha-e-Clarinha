@@ -68,7 +68,11 @@ router.post("/", async (req, res) => {
         phone: phoneDigits || undefined,
       },
       webhookUrl,
-      metadata: { order_id: orderId, kit },
+      // external_reference e o campo que a PinPay exige de verdade (validado
+      // em producao com 422 missing_metadata) para saber a que pedido do
+      // nosso sistema a cobranca pertence. Mantemos order_id tambem, pois
+      // e como o resto do nosso codigo (e os logs) se refere a esse pedido.
+      metadata: { external_reference: orderId, order_id: orderId, kit },
     });
   } catch (err) {
     const notConfigured = err.code === "PINPAY_NOT_CONFIGURED";
