@@ -100,6 +100,11 @@ router.post("/", async (req, res) => {
     });
   }
 
+  // TEMP DEBUG: os nomes de campo do guia inicial (qr_code/qr_code_url) nao
+  // batem com a resposta real da PinPay -- log temporario para descobrir os
+  // nomes corretos, remover depois de confirmado.
+  console.log("pinpay_charge_response_debug", JSON.stringify(charge));
+
   await pool.query(
     `UPDATE orders
         SET pinpay_transaction_id = $1, status = $2, qr_code = $3, qr_code_url = $4, expires_at = $5, updated_at = now()
